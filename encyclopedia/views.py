@@ -2,7 +2,7 @@ from django.shortcuts import render
 import markdown
 from . import util
 from django import forms
-import random
+import random, re
 
 class NewPageForm(forms.Form):
     Title = forms.CharField(label="Название")
@@ -76,10 +76,23 @@ def create_page(requests):
         "form": NewPageForm()
     })
 
-def edit(requests):
-    return render(requests, "encyclopedia/edit.html", {
-         "form":  EditPageForm()
-    })
+def edit(requests, title):
+    text = util.get_entry(title)
+    if requests.method == "POST":
+        form = requests.POST
+        print(form)
+        Text = form['text']
+        md = markdown.Markdown()
+        text = md.convert(Text)
+        util.save_entry(title, f"#{title} \n {text}")
+        return page(requests, title)
+    else:
+        md = markdown.Markdown()
+        result = md.convert(text)
+        return render(requests, "encyclopedia/edit.html", {
+             "title": title,
+             "text": result.split('</h1>')[1].replace("<p>",'').replace("</p>", '')
+        })
 
 def random_page(requests):
     return page(requests, random.choice(util.list_entries()))
